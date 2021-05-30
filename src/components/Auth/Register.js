@@ -1,5 +1,6 @@
 import React from "react";
 import firebase from "../../firebase";
+import md5 from 'md5';
 import {
   Grid,
   Form,
@@ -17,69 +18,115 @@ class Register extends React.Component {
     email: "",
     password: "",
     passwordConfirmation: "",
-    errors:[]
+    errors: [],
+    loading: false,
+    userRef : firebase.database().ref('users')
   };
 
-  isFormValid = () =>{
-    let errors=[]
+  isFormValid = () => {
+    let errors = [];
     let error;
-     if(this.isFormEmpty(this.state)){
-       error={Message :'Fill in all fields'};
-       this.setState({errors : errors.concat(error)});
-       return false;
 
-     }
-
-     else if(!this.isPasswordValid(this.state)){
-       error ={Message : "Password is invalid"}
-       this.setState({errors : errors.concat(error)});
-       return false;
-
-     }
-     else{
-       return true;
-     }
-  }
-
-  isFormEmpty = ({username,email,password,passwordConfirmation}) =>{
-    return !username.length || !email.length || !password.length
-    || !passwordConfirmation.length;
-
-  }
-
-  isPasswordValid = ({password,passwordConfirmation}) => {
-    if(password.length < 6 || passwordConfirmation.length <6){
+    if (this.isFormEmpty(this.state)) {
+      error = { message: "Fill in all fields" };
+      this.setState({ errors: errors.concat(error) });
       return false;
-    }
-    else if(password !== passwordConfirmation){
+    } else if (!this.isPasswordValid(this.state)) {
+      error = { message: "Password is invalid" };
+      this.setState({ errors: errors.concat(error) });
       return false;
+    } else {
+      return true;
     }
-    return true;
-  }
+  };
 
-  displayErrors = errors => errors.map((error,i) => <p keys={i}>{error.Message}</p>)
+  isFormEmpty = ({ username, email, password, passwordConfirmation }) => {
+    return (
+      !username.length ||
+      !email.length ||
+      !password.length ||
+      !passwordConfirmation.length
+    );
+  };
+
+  isPasswordValid = ({ password, passwordConfirmation }) => {
+    if (password.length < 6 || passwordConfirmation.length < 6) {
+      return false;
+    } else if (password !== passwordConfirmation) {
+      return false;
+    } else {
+      return true;
+    }
+  };
+
+  displayErrors = errors =>
+    errors.map((error, i) => <p key={i}>{error.message}</p>);
 
   handleChange = event => {
     this.setState({ [event.target.name]: event.target.value });
   };
 
   handleSubmit = event => {
-    if(this.isFormValid()){
-      event.preventDefault();
+    event.preventDefault();
+    if (this.isFormValid()) {
+      this.setState({ errors: [], loading: true });
       firebase
         .auth()
         .createUserWithEmailAndPassword(this.state.email, this.state.password)
         .then(createdUser => {
           console.log(createdUser);
+          createdUser.user.updateProfile({
+            displayName:this.state.username,
+            photoURL:`http://gravatar.com/avatar/${md5(createdUser.user.email)}?d=identicon`
+             
+          })
+          .then(() =>{
+            this.saveUser(createdUser).then(() =>{
+              console.log("User Saved")
+            })
+            // this.setState({loading:false});
+
+          })
+          .catch(err =>{
+            console.log(err);
+            this.setState({errors : this.state.errors.concat(err),loading:false})
+          })
+          // this.setState({ loading: false });
         })
         .catch(err => {
           console.error(err);
+          this.setState({
+            errors: this.state.errors.concat(err),
+            loading: false
+          });
         });
-    }  
+    }
   };
 
+  handleInputError = (errors, inputName) => {
+    return errors.some(error => error.message.toLowerCase().includes(inputName))
+      ? "error"
+      : "";
+  };
+
+  saveUser = createdUser =>{
+    return this.state.usersRef.child(createdUser.user.uid).set({
+      name : createdUser.user.displayName,
+      avatar: createdUser.user.photoURL
+    });
+  }
+
+
+
   render() {
-    const { username, email, password, passwordConfirmation,errors } = this.state;
+    const {
+      username,
+      email,
+      password,
+      passwordConfirmation,
+      errors,
+      loading
+    } = this.state;
 
     return (
       <Grid textAlign="center" verticalAlign="middle" className="app">
@@ -109,6 +156,7 @@ class Register extends React.Component {
                 placeholder="Email Address"
                 onChange={this.handleChange}
                 value={email}
+                className={this.handleInputError(errors, "email")}
                 type="email"
               />
 
@@ -120,6 +168,7 @@ class Register extends React.Component {
                 placeholder="Password"
                 onChange={this.handleChange}
                 value={password}
+                className={this.handleInputError(errors, "password")}
                 type="password"
               />
 
@@ -131,15 +180,22 @@ class Register extends React.Component {
                 placeholder="Password Confirmation"
                 onChange={this.handleChange}
                 value={passwordConfirmation}
+                className={this.handleInputError(errors, "password")}
                 type="password"
               />
 
-              <Button color="orange" fluid size="large">
+              <Button
+                disabled={loading}
+                className={loading ? "loading" : ""}
+                color="orange"
+                fluid
+                size="large"
+              >
                 Submit
               </Button>
             </Segment>
           </Form>
-          {errors.length > 0 &&(
+          {errors.length > 0 && (
             <Message error>
               <h3>Error</h3>
               {this.displayErrors(errors)}
