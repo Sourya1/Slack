@@ -1,6 +1,5 @@
 import React from "react";
 import firebase from "../../firebase";
-
 import {
   Grid,
   Form,
@@ -17,11 +16,9 @@ class Login extends React.Component {
     email: "",
     password: "",
     errors: [],
-    loading: false,
+    loading: false
   };
 
-
-  
   displayErrors = errors =>
     errors.map((error, i) => <p key={i}>{error.message}</p>);
 
@@ -33,12 +30,11 @@ class Login extends React.Component {
     event.preventDefault();
     if (this.isFormValid(this.state)) {
       this.setState({ errors: [], loading: true });
-
       firebase
         .auth()
-        .signInWithEmailAndPassword(this.state.email , this.state.password)
-        .then(signedUser => {
-          console.log(signedUser)
+        .signInWithEmailAndPassword(this.state.email, this.state.password)
+        .then(signedInUser => {
+          console.log(signedInUser);
         })
         .catch(err => {
           console.error(err);
@@ -47,11 +43,10 @@ class Login extends React.Component {
             loading: false
           });
         });
-      
     }
   };
 
-  isFormValid = ({email,password}) => email && password;
+  isFormValid = ({ email, password }) => email && password;
 
   handleInputError = (errors, inputName) => {
     return errors.some(error => error.message.toLowerCase().includes(inputName))
@@ -59,14 +54,8 @@ class Login extends React.Component {
       : "";
   };
 
-
   render() {
-    const {
-      email,
-      password,
-      errors,
-      loading
-    } = this.state;
+    const { email, password, errors, loading } = this.state;
 
     return (
       <Grid textAlign="center" verticalAlign="middle" className="app">
@@ -100,6 +89,7 @@ class Login extends React.Component {
                 className={this.handleInputError(errors, "password")}
                 type="password"
               />
+
               <Button
                 disabled={loading}
                 className={loading ? "loading" : ""}
