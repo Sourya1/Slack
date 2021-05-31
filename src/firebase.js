@@ -6,6 +6,7 @@ import "firebase/storage";
 var firebaseConfig = {
   apiKey: "AIzaSyDBqYta2cUfyqp6rnIPedMWhX4a1cfcBt8",
   authDomain: "slack-1dbfe.firebaseapp.com",
+  databaseURL: "https://slack-1dbfe-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "slack-1dbfe",
   storageBucket: "slack-1dbfe.appspot.com",
   messagingSenderId: "809505581351",
